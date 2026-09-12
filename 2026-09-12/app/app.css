@@ -13,16 +13,21 @@
   --accent-soft: rgba(124, 92, 255, 0.15);
   --ok: #3ddc84;
 
-  --radius: 0.75rem;
-  --gap: 1rem;
-  --page: 64rem;
+  --radius: 0.625rem;
+  --gap: 0.75rem;
+  --page: 60rem;
 }
 
 * { box-sizing: border-box; }
 
 html {
-  /* Big base type — legible from the back of the room beats pretty. */
-  font-size: 20px;
+  /* 16px base; everything is in rem so this one number sets the density.
+     Bumps up on very wide screens (projectors) where there's room for it. */
+  font-size: 16px;
+}
+
+@media (min-width: 110rem) {
+  html { font-size: 18px; }
 }
 
 body {
@@ -31,11 +36,22 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  line-height: 1.4;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-button, input { font: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: 0.5; }
+img, svg { display: block; max-width: 100%; }
+h1, h2, h3, p { margin-top: 0; }
+
+/* Keyboard users get a clear ring; mouse users don't get a stray one. */
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 0.25rem; }
+
+::selection { background: var(--accent); color: #fff; }
 
 /* Header + nav */
 
@@ -45,15 +61,16 @@ button, input { font: inherit; }
   z-index: 10;
   display: flex;
   align-items: center;
-  gap: 2rem;
-  padding: 1rem 2rem;
-  background: var(--bg);
+  gap: 1.25rem;
+  padding: 0.6rem 1.5rem;
+  background: rgba(19, 19, 24, 0.92);
+  backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--line);
 }
 
 .brand {
   margin: 0;
-  font-size: 1.6rem;
+  font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
@@ -71,19 +88,20 @@ button, input { font: inherit; }
 
 .nav {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
   margin-left: auto;
 }
 
 .nav button {
-  padding: 0.6rem 1.4rem;
+  min-height: 2.25rem;
+  padding: 0.4rem 1rem;
   border: 1px solid transparent;
   border-radius: 2rem;
   background: transparent;
   color: var(--muted);
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s, border-color 0.15s;
 }
 
 .nav button:hover { color: var(--text); border-color: var(--line); }
@@ -99,11 +117,16 @@ button, input { font: inherit; }
 .views {
   max-width: var(--page);
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1.25rem 1.5rem 2.5rem;
 }
 
 .view { display: none; }
-.view.active { display: block; }
+.view.active { display: block; animation: view-in 0.18s ease-out; }
+
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
 
 /* A section with nothing mounted in it — visible so a missing feature reads
    as "not here yet" rather than a broken page. */
@@ -112,14 +135,19 @@ button, input { font: inherit; }
   display: block;
   padding: 3rem 0;
   color: var(--muted);
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   text-align: center;
 }
 
 @media (max-width: 40rem) {
-  html { font-size: 17px; }
-  .top { flex-wrap: wrap; gap: 0.75rem; padding: 0.75rem 1rem; }
+  html { font-size: 15px; }
+  .top { flex-wrap: wrap; gap: 0.5rem; padding: 0.6rem 1rem; }
+  .brand { font-size: 1.1rem; }
   .nav { margin-left: 0; width: 100%; }
-  .nav button { flex: 1; padding: 0.5rem 0.75rem; }
-  .views { padding: 1rem; }
+  .nav button { flex: 1; padding: 0.45rem 0.5rem; }
+  .views { padding: 1rem 1rem 2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }
