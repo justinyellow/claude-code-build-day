@@ -87,7 +87,7 @@
     '.find-empty{opacity:.6;font-size:1.1rem}',
     // Area map
     '.find-map{position:relative;height:62vh;min-height:420px;border-radius:.75rem;overflow:hidden;background:#12141b;',
-    'border:1px solid var(--line,#3a3a44);touch-action:none;user-select:none;-webkit-user-select:none}',
+    'border:1px solid var(--line,#3a3a44);touch-action:none;overscroll-behavior:contain;user-select:none;-webkit-user-select:none}',
     '.find-map svg{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;transition:transform .5s ease;transform-origin:50% 60%}',
     '.find-map.dragging svg{cursor:grabbing;transition:none}',
     '.find-map.iso svg{transform:perspective(900px) rotateX(48deg) scale(1.4)}',
@@ -529,7 +529,7 @@
       // remember what was under the finger on pointerdown and act on release.
       var pts = {}, downOn = null, moved = false, lastMid = null, lastDist = 0;
       svg.addEventListener('pointerdown', function (e) {
-        svg.setPointerCapture(e.pointerId);
+        try { svg.setPointerCapture(e.pointerId); } catch (err) { /* synthetic or stale pointer */ }
         pts[e.pointerId] = { x: e.clientX, y: e.clientY };
         var ids = Object.keys(pts);
         if (ids.length === 1) { downOn = e.target.closest('[data-sel]'); moved = false; }
@@ -668,6 +668,17 @@
       map.cx = wx - (px - W / 2) / map.z; map.cy = wy - (py - H / 2) / map.z;
     }
 
+    // Keep the view inside the area we have data for. No dragging off into
+    // the void. Bounds are [x0, y0, x1, y1] in metres from the venue.
+    function clampView() {
+      var b = map.D.bounds, W = svg.clientWidth, H = svg.clientHeight;
+      if (!W || !H) return;
+      var halfW = W / 2 / map.z, halfH = H / 2 / map.z;
+      var minX = b[0] + halfW, maxX = b[2] - halfW, minY = b[1] + halfH, maxY = b[3] - halfH;
+      map.cx = minX > maxX ? (b[0] + b[2]) / 2 : clamp(map.cx, minX, maxX);
+      map.cy = minY > maxY ? (b[1] + b[3]) / 2 : clamp(map.cy, minY, maxY);
+    }
+
     function mePos() {
       var p = positions(state)[state.me];
       return p || { x: 0, y: 0 };
@@ -761,6 +772,7 @@
     function drawMap() {
       var D = map.D, W = svg.clientWidth, H = svg.clientHeight;
       if (!W || !H) return;
+      clampView();
       var z = map.z, cx = map.cx, cy = map.cy;
       var tx = W / 2 - cx * z, ty = H / 2 - cy * z;
       geomG.setAttribute('transform', 'translate(' + tx + ' ' + ty + ') scale(' + z + ')');
