@@ -11,6 +11,7 @@ then select the one feature we take to the demo.
 ```
 <YYYY-MM-DD>/          one folder per build day
   README.md            event details, schedule, tracks, links
+  APP.md               what the app is and the model features share
   plans/               one markdown file per feature idea
   app/                 the app itself
     features/<slug>/   a feature prototype

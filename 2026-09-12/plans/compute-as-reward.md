@@ -1,24 +1,26 @@
-# Compute as a reward mechanism
+# Thank — Compute as reward
 
 **Track:** _TBD_
 **Status:** idea
 
 ## The feature
-Reward people for contributing — answering questions, helping out — with
-compute rather than money. A "buy me a coffee" where the coffee is credits.
+The incentive layer. Helping someone earns you **credits** — compute, not
+money. It's "buy me a coffee" where the coffee is inference.
+
+This is what makes [Ask](question-router.md) work: experts answer because
+answering is worth something.
 
 ## Why Fable 5.1
 _TBD_
 
 ## Demo in 2 minutes
-_TBD_
+Answer a routed question, watch credits land, spend them on something in-app.
 
 ## Scope
-- In: _TBD_
-- Out: _TBD_
+- In: earn credits by answering, see your balance, gift credits to someone
+- Out: real money, payouts, anything that needs a payment provider
 
 ## Open questions
-- Whose compute, and how is it actually granted?
-- Pairs naturally with [question-router](question-router.md) — reward the
-  experts who answer. Worth deciding if it's a standalone feature or that one's
-  incentive layer.
+- Whose compute is being granted, and how is it actually redeemed?
+- Standalone feature, or strictly the reward rail for Ask? Written as the
+  latter — it has no demo of its own without a question to answer.
