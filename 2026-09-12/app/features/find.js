@@ -52,7 +52,7 @@
   };
 
   var STYLE = [
-    '.find-head{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.75rem;font-size:1.15rem}',
+    '.find-head{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.75rem;font-size:1.05rem}',
     '.find-modes{display:inline-flex;border:1px solid var(--line,#3a3a44);border-radius:2rem;overflow:hidden}',
     '.find-modes button{font:inherit;font-size:.95rem;padding:.35rem 1rem;border:0;background:transparent;color:inherit;opacity:.6;cursor:pointer}',
     '.find-modes button[aria-selected="true"]{opacity:1;background:rgba(124,92,255,.2);color:#fff}',
@@ -82,11 +82,11 @@
     '.find-pin{fill:var(--accent,#7c5cff);stroke:#eceaf5;stroke-width:5;pointer-events:none}',
     '.find-you{fill:#3ddc97;stroke:#eceaf5;stroke-width:5;pointer-events:none}',
     '@keyframes find-march{to{stroke-dashoffset:-44}}',
-    '.find-legend{display:flex;gap:1.5rem;font-size:.95rem;opacity:.65;margin-top:.5rem;flex-wrap:wrap}',
+    '.find-legend{display:flex;gap:1.25rem;font-size:.85rem;opacity:.65;margin-top:.5rem;flex-wrap:wrap}',
     '.find-legend i{display:inline-block;width:.75rem;height:.75rem;border-radius:50%;margin-right:.4rem;vertical-align:middle}',
     '.find-empty{opacity:.6;font-size:1.1rem}',
     // Area map
-    '.find-map{position:relative;height:62vh;min-height:420px;border-radius:.75rem;overflow:hidden;background:#12141b;',
+    '.find-map{position:relative;height:56vh;min-height:360px;max-height:640px;border-radius:.75rem;overflow:hidden;background:#12141b;',
     'border:1px solid var(--line,#3a3a44);touch-action:none;overscroll-behavior:contain;user-select:none;-webkit-user-select:none}',
     '.find-map svg{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;transition:transform .5s ease;transform-origin:50% 60%}',
     '.find-map.dragging svg{cursor:grabbing;transition:none}',
@@ -130,11 +130,11 @@
     '.m-route-glow{fill:none;stroke:var(--accent,#7c5cff);stroke-width:14;opacity:.2;stroke-linecap:round;pointer-events:none}',
     '.m-route-lbl{fill:#fff;font-size:12px;font-weight:600;text-anchor:middle}',
     '.find-search{position:absolute;top:.75rem;left:.75rem;right:4.25rem;z-index:6}',
-    '.find-search input{width:100%;font:inherit;font-size:1.05rem;padding:.65rem 1rem .65rem 2.4rem;border-radius:2rem;',
+    '.find-search input{width:100%;font:inherit;font-size:.95rem;padding:.55rem 1rem .55rem 2.3rem;border-radius:2rem;',
     'border:1px solid var(--line,#3a3a44);background:rgba(27,27,34,.95);color:inherit;outline:none}',
     '.find-search input:focus{border-color:var(--accent,#7c5cff)}',
-    '.find-search .mag{position:absolute;left:.9rem;top:.62rem;opacity:.6;font-size:1.05rem;pointer-events:none}',
-    '.find-results{position:absolute;top:3.5rem;left:0;right:0;z-index:7;background:rgba(27,27,34,.98);',
+    '.find-search .mag{position:absolute;left:.85rem;top:.5rem;opacity:.6;font-size:1rem;pointer-events:none}',
+    '.find-results{position:absolute;top:3.1rem;left:0;right:0;z-index:7;background:rgba(27,27,34,.98);',
     'border:1px solid var(--line,#3a3a44);border-radius:.75rem;overflow:hidden;max-height:17rem;overflow-y:auto}',
     '.find-results button{display:flex;width:100%;align-items:center;gap:.7rem;text-align:left;font:inherit;font-size:1rem;',
     'padding:.6rem .9rem;border:0;border-bottom:1px solid rgba(255,255,255,.05);background:transparent;color:inherit;cursor:pointer}',
@@ -142,23 +142,23 @@
     '.find-results .k{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;opacity:.5;min-width:3.6rem}',
     '.find-results .s{opacity:.55;font-size:.9rem;margin-left:auto;white-space:nowrap}',
     '.find-ctl{position:absolute;right:.75rem;top:.75rem;display:flex;flex-direction:column;gap:.4rem;z-index:5}',
-    '.find-ctl button{width:2.6rem;height:2.6rem;font:inherit;font-size:1.15rem;border-radius:50%;border:1px solid var(--line,#3a3a44);',
+    '.find-ctl button{width:2.4rem;height:2.4rem;font:inherit;font-size:1.05rem;border-radius:50%;border:1px solid var(--line,#3a3a44);',
     'background:rgba(27,27,34,.95);color:inherit;cursor:pointer;display:grid;place-items:center}',
     '.find-ctl button:hover{border-color:var(--accent,#7c5cff)}',
     '.find-ctl button[aria-pressed="true"]{border-color:var(--accent,#7c5cff);background:rgba(124,92,255,.25)}',
     '.find-ctl button.txt{font-size:.8rem;font-weight:700}',
     '.find-sheet{position:absolute;left:.75rem;right:.75rem;bottom:.75rem;z-index:6;background:rgba(27,27,34,.97);',
-    'border:1px solid var(--line,#3a3a44);border-radius:.9rem;padding:.9rem 1.1rem;display:flex;gap:.9rem;align-items:flex-start;',
+    'border:1px solid var(--line,#3a3a44);border-radius:.8rem;padding:.65rem .9rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;',
     'box-shadow:0 10px 30px rgba(0,0,0,.45)}',
-    '.find-sheet .av{width:2.8rem;height:2.8rem;border-radius:50%;display:grid;place-items:center;font-size:1.3rem;font-weight:700;flex:none}',
-    '.find-sheet .body{flex:1;min-width:0}',
-    '.find-sheet h3{margin:0;font-size:1.2rem;line-height:1.25}',
-    '.find-sheet .sub{opacity:.65;font-size:.95rem;margin-top:.15rem}',
-    '.find-sheet .acts{display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap}',
-    '.find-sheet .acts button{font:inherit;font-size:.95rem;padding:.45rem 1rem;border-radius:2rem;border:1px solid var(--line,#3a3a44);',
-    'background:transparent;color:inherit;cursor:pointer}',
+    '.find-sheet .av{width:2.5rem;height:2.5rem;border-radius:50%;display:grid;place-items:center;font-size:1.1rem;font-weight:700;flex:none}',
+    '.find-sheet .body{flex:1 1 14rem;min-width:0}',
+    '.find-sheet h3{margin:0;font-size:1.05rem;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.find-sheet .sub{opacity:.65;font-size:.88rem;margin-top:.1rem;line-height:1.35}',
+    '.find-sheet .acts{display:flex;gap:.4rem;flex-wrap:wrap;margin-left:auto}',
+    '.find-sheet .acts button{font:inherit;font-size:.9rem;padding:.4rem .9rem;border-radius:2rem;border:1px solid var(--line,#3a3a44);',
+    'background:transparent;color:inherit;cursor:pointer;white-space:nowrap}',
     '.find-sheet .acts button.pri{background:var(--accent,#7c5cff);border-color:var(--accent,#7c5cff);color:#fff}',
-    '.find-sheet .x{font:inherit;font-size:1.2rem;border:0;background:transparent;color:inherit;opacity:.5;cursor:pointer;padding:0 .2rem}',
+    '.find-sheet .x{font:inherit;font-size:1.1rem;border:0;background:transparent;color:inherit;opacity:.5;cursor:pointer;padding:0 .2rem;flex:none}',
     '.find-sheet .x:hover{opacity:1}',
     '.find-sheet[hidden],.find-map[hidden],.find-stage[hidden]{display:none}',
     '.find-attrib{position:absolute;right:.5rem;bottom:.3rem;font-size:.7rem;opacity:.4;z-index:2;pointer-events:none}',
@@ -722,10 +722,16 @@
       if (!map.routeTo) return;
       var me = mePos(), t = map.routeTo;
       var W = svg.clientWidth || 600, H = svg.clientHeight || 400;
-      var d = Math.hypot(t.x - me.x, t.y - me.y) || 1;
-      map.z = clamp(Math.min(W, H) * 0.5 / d, 0.15, 3);
-      // Bias upward so the sheet along the bottom doesn't cover the route.
-      map.cx = (me.x + t.x) / 2; map.cy = (me.y + t.y) / 2 + 90 / map.z;
+      // Fit both ends inside the part of the map not covered by the search
+      // bar (top) or the detail sheet (bottom), with some breathing room.
+      var bar = mapEl.querySelector('.find-search');
+      var top = (bar ? bar.offsetTop + bar.offsetHeight : 50) + 24;
+      var bottom = sheet && !sheet.hidden ? sheet.offsetHeight + 36 : 30, side = 60;
+      var availW = Math.max(120, W - side * 2), availH = Math.max(120, H - top - bottom);
+      var dx = Math.abs(t.x - me.x) || 1, dy = Math.abs(t.y - me.y) || 1;
+      map.z = clamp(Math.min(availW / dx, availH / dy) * 0.8, 0.15, 3);
+      map.cx = (me.x + t.x) / 2;
+      map.cy = (me.y + t.y) / 2 - (top + availH / 2 - H / 2) / map.z;
       map.schedule();
     }
 
@@ -739,15 +745,15 @@
 
       if (item.type === 'person') {
         av = '<div class="av" style="background:' + hue(item.id) + '">' + esc(initials(item.name)) + '</div>';
-        sub = (item.away ? 'Stepped out · at ' + esc(item.at) : 'In the venue · ' + esc(item.at)) + '<br>' +
-          esc((item.a.expertise || []).join(', ')) + (item.a.credits ? ' · ' + item.a.credits + ' credits' : '');
+        var whereLine = item.away ? 'Stepped out · at ' + esc(item.at) : 'In the venue · ' + esc(item.at);
         if (item.id !== state.me) {
+          whereLine += ' · ' + walkText(d);
           acts = routeBtn + (state.target === item.id ? '' : '<button type="button" data-act="target">Set as target</button>');
-          sub += '<br>' + walkText(d);
-        } else { sub = 'That’s you. ' + sub; }
+        } else { whereLine = 'That’s you · ' + whereLine; }
+        sub = whereLine + '<br>' + esc((item.a.expertise || []).join(', ')) + (item.a.credits ? ' · ' + item.a.credits + ' credits' : '');
       } else if (item.type === 'event') {
         av = '<div class="av" style="background:#ff9f43;color:#1a1a1a">' + item.e.icon + '</div>';
-        sub = startsText(item.e.startsIn) + ' · ' + esc(item.e.place) + '<br>' + walkText(d);
+        sub = startsText(item.e.startsIn) + ' · ' + esc(item.e.place) + ' · ' + walkText(d);
         acts = routeBtn;
       } else if (item.type === 'place') {
         av = '<div class="av" style="background:#2b2f3d">' + (POI_ICON[item.kind] || '📍') + '</div>';
@@ -763,8 +769,8 @@
         acts = '<button type="button" class="pri" data-act="venue">Open venue plan</button>';
       }
 
-      sheet.innerHTML = av + '<div class="body"><h3>' + title + '</h3><div class="sub">' + sub + '</div>' +
-        (acts ? '<div class="acts">' + acts + '</div>' : '') + '</div>' +
+      sheet.innerHTML = av + '<div class="body"><h3>' + title + '</h3><div class="sub">' + sub + '</div></div>' +
+        (acts ? '<div class="acts">' + acts + '</div>' : '') +
         '<button type="button" class="x" data-act="close" aria-label="Close">✕</button>';
       sheet.hidden = false;
     }
