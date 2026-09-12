@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kinnect — Safe meetup map</title>
+<style>
+  /* Kinnect — Safe meetup map. Standalone prototype: no deps, no network,
+     runs by double-clicking this file. Hand-drawn stylised map of Cape Town's
+     East City / CBD in a frame aligned to the street grid (north is up-left;
+     see the compass). Buildings are CSS 3D extrusions over an SVG ground. */
+
+  @property --tilt { syntax: '<angle>'; inherits: true; initial-value: 0deg; }
+  @property --spin { syntax: '<angle>'; inherits: true; initial-value: 0deg; }
+
+  :root {
+    --bg: #131318; --surface: #1b1b22; --line: #3a3a44;
+    --accent: #7c5cff; --good: #3ddc97; --ink: #eceaf5;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    display: flex; flex-direction: column;
+  }
+  header { padding: 1rem 1.5rem .5rem; display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 1.4rem; letter-spacing: -0.02em; }
+  header h1 span { opacity: .55; font-weight: 400; }
+  header .sub { opacity: .55; font-size: .9rem; flex: 1; min-width: 16rem; }
+  .controls { display: flex; gap: .4rem; }
+  .controls button, .card button {
+    font: inherit; font-size: .9rem; padding: .35rem .9rem; border: 1px solid var(--line);
+    border-radius: 2rem; background: transparent; color: inherit; cursor: pointer; opacity: .8;
+  }
+  .controls button:hover, .card button:hover { opacity: 1; border-color: var(--accent); }
+  .controls button[aria-pressed="true"] { opacity: 1; border-color: var(--accent); background: rgba(124, 92, 255, .15); }
+
+  main {
+    flex: 1; min-height: 0; display: grid;
+    grid-template-columns: minmax(0, 1fr) 22rem; gap: 1rem; padding: 0 1.5rem 1rem;
+  }
+
+  /* ---- the 3D stage ---- */
+  .stage {
+    position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: .75rem;
+    background: radial-gradient(ellipse at 50% 30%, #1d1d27 0%, #101015 70%);
+    perspective: 1500px; perspective-origin: 50% 38%;
+    --tilt: 55deg; --spin: -30deg;
+    touch-action: none; cursor: grab; user-select: none; min-height: 420px;
+  }
+  .stage.animating { transition: --tilt .7s ease, --spin .7s ease; }
+  .stage:active { cursor: grabbing; }
+  .fit {
+    position: absolute; left: 50%; top: 50%; width: 1200px; height: 800px;
+    margin: -400px 0 0 -600px; transform-style: preserve-3d;
+  }
+  .world {
+    position: absolute; inset: 0; transform-style: preserve-3d;
+    transform: rotateX(var(--tilt)) rotateZ(var(--spin));
+  }
+  .ground { position: absolute; left: 0; top: 0; display: block; }
+  #solids, #pins { position: absolute; inset: 0; transform-style: preserve-3d; }
+  .ground text { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; pointer-events: none; }
+  .ground .st { font-size: 11px; fill: #a0a0b8; letter-spacing: .04em; }
+  .ground .place { font-size: 13px; fill: #d5d3e6; font-weight: 600; }
+  .ground .big { font-size: 22px; fill: #6d6d80; font-weight: 700; letter-spacing: .08em; }
+  .ground .water-lbl { font-size: 16px; fill: #6fa3c9; font-style: italic; letter-spacing: .1em; }
+  .ground .zone { fill: var(--good); fill-opacity: .10; stroke: var(--good); stroke-opacity: .55; stroke-width: 1.5; stroke-dasharray: 6 5; }
+  .ground .zone-lbl { font-size: 11px; fill: var(--good); letter-spacing: .08em; text-transform: uppercase; }
+  .ground .route-glow { fill: none; stroke: var(--accent); stroke-width: 16; opacity: .18; stroke-linecap: round; stroke-linejoin: round; }
+  .ground .route { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round;
+                   stroke-dasharray: 14 10; animation: march 1s linear infinite; }
+  @keyframes march { to { stroke-dashoffset: -24; } }
+
+  .solid { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-style: preserve-3d; pointer-events: none; }
+  .face { position: absolute; }
+  .face.top { box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+
+  /* pins are billboards: they undo the world rotation so they always face you */
+  .pin { position: absolute; width: 0; height: 0; transform-style: preserve-3d; }
+  .marker {
+    position: absolute; left: 0; bottom: 0; transform-origin: 50% 100%;
+    transform: translate(-50%, 0) translateZ(var(--z, 0px)) rotateZ(calc(-1 * var(--spin))) rotateX(calc(-1 * var(--tilt)));
+    display: flex; flex-direction: column; align-items: center; white-space: nowrap; cursor: pointer;
+    transition: opacity .2s;
+  }
+  .pin.dim .marker { opacity: .3; }
+  .marker .label {
+    font-size: 13px; line-height: 1; padding: .3em .55em; border-radius: .5em;
+    background: rgba(19, 19, 24, .88); border: 1px solid var(--line); margin-bottom: 4px;
+  }
+  .marker .head {
+    width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+    background: #2a2a36; border: 2px solid #5a5a6c; font-size: 15px; line-height: 1;
+    box-shadow: 0 2px 6px rgba(0,0,0,.5);
+  }
+  .marker .stem { width: 2px; height: 14px; background: #5a5a6c; }
+  .marker .foot { width: 8px; height: 8px; border-radius: 50%; background: #5a5a6c; margin-top: -3px; }
+  .pin.venue .head { background: #2b2350; border-color: var(--accent); }
+  .pin.venue .label { border-color: var(--accent); }
+  .pin.selected .head { background: var(--accent); border-color: #fff; transform: scale(1.15); }
+  .pin.selected .label { border-color: var(--accent); background: rgba(124, 92, 255, .25); }
+  .pin.selected .stem, .pin.selected .foot { background: var(--accent); }
+  .pin.closed .head { border-style: dashed; }
+
+  .compass {
+    position: absolute; right: .9rem; top: .9rem; width: 44px; height: 44px; border-radius: 50%;
+    border: 1px solid var(--line); background: rgba(19,19,24,.8); display: grid; place-items: center;
+    font-size: 11px; font-weight: 700; pointer-events: none;
+  }
+  .compass::before {
+    content: ''; position: absolute; left: 50%; top: 4px; width: 0; height: 0; margin-left: -5px;
+    border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 12px solid #e0605a;
+  }
+  .compass b { margin-top: 12px; }
+  .hint { position: absolute; left: .9rem; bottom: .7rem; font-size: .8rem; opacity: .45; pointer-events: none; }
+
+  /* ---- side panel ---- */
+  aside { min-height: 0; display: flex; flex-direction: column; gap: .8rem; overflow: auto; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: .75rem; padding: .9rem 1rem; }
+  .card h2 { margin: 0 0 .25rem; font-size: 1.1rem; }
+  .card .meta { font-size: .85rem; opacity: .7; margin-bottom: .5rem; }
+  .card .open { color: var(--good); } .card .shut { color: #f0a35e; }
+  .card .why { margin: 0 0 .6rem; }
+  .card .walk { font-size: .95rem; padding: .5rem .7rem; border-radius: .5rem; background: rgba(124,92,255,.12); border: 1px solid rgba(124,92,255,.4); }
+  .card .walk small { display: block; opacity: .7; font-size: .8rem; margin-top: .15rem; }
+  .card .empty { opacity: .6; margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .chips button {
+    font: inherit; font-size: .8rem; padding: .2rem .7rem; border: 1px solid var(--line); border-radius: 2rem;
+    background: transparent; color: inherit; cursor: pointer; opacity: .7;
+  }
+  .chips button[aria-pressed="true"] { opacity: 1; border-color: var(--good); color: var(--good); }
+  .spots { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .3rem; }
+  .spots li {
+    display: flex; align-items: center; gap: .6rem; padding: .5rem .7rem; border-radius: .5rem;
+    border: 1px solid transparent; cursor: pointer;
+  }
+  .spots li:hover { background: rgba(255,255,255,.04); }
+  .spots li[aria-selected="true"] { border-color: var(--accent); background: rgba(124,92,255,.12); }
+  .spots li[hidden] { display: none; }
+  .spots .ic { width: 1.6rem; text-align: center; }
+  .spots .nm { flex: 1; font-weight: 600; font-size: .95rem; }
+  .spots .nm small { display: block; font-weight: 400; opacity: .6; font-size: .8rem; }
+  .spots .min { font-size: .85rem; opacity: .7; }
+  .spots li.closed .nm { opacity: .6; }
+  .legend { font-size: .8rem; opacity: .75; line-height: 1.7; }
+  .legend i { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; vertical-align: middle; margin-right: .35rem; }
+  .legend p { margin: .4rem 0 0; opacity: .85; }
+
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; grid-template-rows: 60vh auto; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Kinnect <span>· Safe meetup map</span></h1>
+    <div class="sub">Cape Town East City, around Roamwork Harrington · stylised, hand-drawn, works offline</div>
+    <div class="controls">
+      <button type="button" data-view="2d" aria-pressed="false">2D</button>
+      <button type="button" data-view="3d" aria-pressed="true">3D</button>
+      <button type="button" id="spinBtn" aria-pressed="false">Spin 360°</button>
+      <button type="button" id="resetBtn">Reset</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="stage" id="stage">
+      <div class="fit" id="fit">
+        <div class="world" id="world">
+          <svg class="ground" id="ground" viewBox="0 0 1200 800" width="1200" height="800" aria-label="Stylised map of Cape Town CBD and East City"></svg>
+          <div id="solids"></div>
+          <div id="pins"></div>
+        </div>
+      </div>
+      <div class="compass" id="compass"><b>N</b></div>
+      <div class="hint">Drag sideways to rotate · drag up/down to tilt · tap a spot for a route</div>
+    </div>
+
+    <aside>
+      <div class="card" id="detail"></div>
+      <div class="chips" id="chips"></div>
+      <ol class="spots" id="spots"></ol>
+      <div class="legend card">
+        <div><i style="background:var(--good);opacity:.5"></i>Preferred precinct &nbsp; <i style="background:var(--accent)"></i>Route &nbsp; <i style="background:#e0605a"></i>North</div>
+        <p><strong>How these were picked:</strong> by the hosts — public, busy, staffed, well-lit, close to the venue or to transport. This is not a crime map; we have no offline data we'd trust, so we show where to go rather than where not to. After 21:00: go in a group, ride-hail door to door.</p>
+      </div>
+    </aside>
+  </main>
+
+<script>
+(function () {
+  'use strict';
+
+  // ------------------------------------------------------------------
+  // Data. Frame: x grows toward the south-east (Buitengracht -> District
+  // Six), y grows toward the south-west (Table Bay -> the mountain).
+  // 1 unit is roughly 2 metres. All positions are approximate — this is
+  // a stylised map, not a survey.
+  // ------------------------------------------------------------------
+  var VENUE = { x: 650, y: 490 };
+  var M_PER_UNIT = 2, WALK_M_PER_MIN = 80;
+
+  var STREETS = [
+    // NE-SW streets (vertical in this frame)
+    { name: 'Buitengracht',   axis: 'v', at: 150, from: 40,  to: 680, main: true },
+    { name: 'Bree',           axis: 'v', at: 210, from: 110, to: 620 },
+    { name: 'Loop',           axis: 'v', at: 260, from: 160, to: 620 },
+    { name: 'Long',           axis: 'v', at: 310, from: 160, to: 620, main: true },
+    { name: 'Burg',           axis: 'v', at: 355, from: 200, to: 360 },
+    { name: 'Adderley',       axis: 'v', at: 400, from: 70,  to: 400, main: true },
+    { name: 'Government Ave', axis: 'v', at: 400, from: 400, to: 660, walk: true },
+    { name: 'Plein',          axis: 'v', at: 450, from: 300, to: 620 },
+    { name: 'Buitenkant',     axis: 'v', at: 560, from: 160, to: 680, main: true },
+    { name: 'Harrington',     axis: 'v', at: 620, from: 360, to: 600, main: true },
+    { name: 'Canterbury',     axis: 'v', at: 680, from: 360, to: 620 },
+    { name: 'Tennant',        axis: 'v', at: 740, from: 360, to: 640 },
+    // NW-SE streets (horizontal)
+    { name: 'Dock Rd',        axis: 'h', at: 70,  from: 60,  to: 400 },
+    { name: 'Strand',         axis: 'h', at: 160, from: 40,  to: 760, main: true },
+    { name: 'Castle',         axis: 'h', at: 210, from: 150, to: 560 },
+    { name: 'Shortmarket',    axis: 'h', at: 260, from: 150, to: 400 },
+    { name: 'Longmarket',     axis: 'h', at: 300, from: 150, to: 450 },
+    { name: 'Wale',           axis: 'h', at: 360, from: 60,  to: 400 },
+    { name: 'Darling',        axis: 'h', at: 360, from: 400, to: 1150, main: true },
+    { name: 'Caledon',        axis: 'h', at: 420, from: 450, to: 760 },
+    { name: 'Barrack',        axis: 'h', at: 470, from: 450, to: 760 },
+    { name: 'Commercial',     axis: 'h', at: 510, from: 450, to: 740 },
+    { name: 'Albertus',       axis: 'h', at: 545, from: 450, to: 740 },
+    { name: 'Roeland',        axis: 'h', at: 600, from: 400, to: 800, main: true },
+    { name: 'Mill',           axis: 'h', at: 660, from: 150, to: 560 }
+  ];
+
+  var KINDS = { coffee: 'Coffee', food: 'Food', square: 'Parks & squares', park: 'Parks & squares', culture: 'Culture', transport: 'Transport', venue: 'Venue' };
+
+  // hours: [open, close] in local hours. z: height of the building the pin stands on.
+  var SPOTS = [
+    { id: 'venue',       name: 'Roamwork Harrington',  kind: 'venue',     x: 650, y: 490, z: 30, icon: '★',  hours: [8, 18],    why: 'The build day venue. Every route starts here.' },
+    { id: 'hsq',         name: 'Harrington Square',    kind: 'square',    x: 650, y: 445,        icon: '◻',  hours: [7, 19],    why: 'The open square next door. Busy with the East City crowd by day, food trucks at lunch.' },
+    { id: 'truth',       name: 'Truth Coffee',         kind: 'coffee',    x: 546, y: 490, z: 18, icon: '☕', hours: [7, 18],    why: 'Big, busy, plenty of staff. Opens early — good for a one-to-one before the day starts.' },
+    { id: 'charlys',     name: "Charly's Bakery",      kind: 'food',      x: 699, y: 579, z: 12, icon: '🧁', hours: [8.5, 15],  why: 'Canterbury Street institution, two minutes from the venue. Cash or card, no fuss.' },
+    { id: 'booklounge',  name: 'The Book Lounge',      kind: 'culture',   x: 579, y: 616, z: 14, icon: '📚', hours: [9, 19],    why: 'Quiet bookshop café on Roeland. Good for a long conversation.' },
+    { id: 'd6museum',    name: 'District Six Museum',  kind: 'culture',   x: 545, y: 529, z: 16, icon: '🏛️', hours: [9, 16],    why: 'Museum café, calm and staffed. Closed on Sundays.' },
+    { id: 'garden',      name: "Company's Garden",     kind: 'park',      x: 400, y: 520,        icon: '🌳', hours: [7, 19],    why: 'Public park with a café and security at the gates. Daylight only.' },
+    { id: 'parade',      name: 'Grand Parade',         kind: 'square',    x: 507, y: 285,        icon: '◻',  hours: [8, 17],    why: 'The big open square by City Hall. Market on Wednesdays and Saturdays.' },
+    { id: 'station',     name: 'Cape Town Station',    kind: 'transport', x: 437, y: 122, z: 18, icon: '🚉', hours: [5, 22],    why: 'MyCiTi, Metrorail and Golden Arrow. Meet under the clock on the concourse, not on the platforms.' },
+    { id: 'greenmarket', name: 'Greenmarket Square',   kind: 'square',    x: 334, y: 281,        icon: '◻',  hours: [9, 16],    why: 'Craft market with cafés on every side. Always people around.' },
+    { id: 'long',        name: 'Long Street cafés',    kind: 'coffee',    x: 310, y: 430,        icon: '☕', hours: [8, 23],    why: 'Cafés by day, bars by night. After dark go as a group.' },
+    { id: 'castle',      name: 'Castle of Good Hope',  kind: 'culture',   x: 608, y: 275, z: 14, icon: '🏰', hours: [9, 16],    why: 'Guarded grounds with a café inside the walls.' },
+    { id: 'waterfront',  name: 'V&A Waterfront',       kind: 'square',    x: 160, y: 70,         icon: '⚓', hours: [9, 21],    why: 'Private security, open late, hundreds of people. Take MyCiTi or a ride after dark — it is a long walk.' },
+    { id: 'bokaap',      name: 'Bo-Kaap (Wale St)',    kind: 'culture',   x: 100, y: 350,        icon: '🏘️', hours: [9, 17],    why: 'Coffee and photos by day. It is residential — keep it quiet and go with a local.' }
+  ];
+
+  // Host-picked precincts. Positive framing only.
+  var ZONES = [
+    { label: 'East City · venue',  x: 566, y: 372, w: 178, h: 258 },
+    { label: "Company's Garden",   x: 356, y: 396, w: 100, h: 262 },
+    { label: 'Long St · Greenmarket', x: 240, y: 240, w: 122, h: 320 },
+    { label: 'Station · Parade (daytime)', x: 396, y: 92, w: 164, h: 262 },
+    { label: 'Waterfront',         x: 40,  y: 18,  w: 250, h: 82 }
+  ];
+
+  // Extruded shapes: rect [x, y, w, h] or poly [[x,y]...], height, tone.
+  var SOLIDS = [
+    { rect: [628, 476, 44, 28], h: 30, tone: 'venue' },
+    { rect: [470, 368, 75, 42], h: 24 },              // City Hall
+    { poly: pentagon(640, 275, 65), h: 14, tone: 'stone' }, // Castle
+    { rect: [405, 95, 65, 55],  h: 18 },              // Station
+    { rect: [406, 410, 40, 60], h: 22, tone: 'stone' }, // Parliament
+    { rect: [366, 366, 32, 32], h: 30, tone: 'stone' }, // Cathedral
+    { rect: [536, 478, 20, 24], h: 18 },              // Truth
+    { rect: [534, 518, 22, 22], h: 16 },              // D6 Museum
+    { rect: [566, 606, 26, 20], h: 14 },              // Book Lounge
+    { rect: [686, 566, 26, 26], h: 12 },              // Charly's
+    { rect: [175, 95, 30, 45],  h: 60 },              // foreshore towers
+    { rect: [225, 100, 30, 40], h: 85 },
+    { rect: [300, 95, 40, 45],  h: 70 },
+    { rect: [575, 100, 60, 45], h: 60 },              // Civic Centre
+    { rect: [462, 175, 50, 28], h: 40 },              // Golden Acre
+    { rect: [270, 320, 30, 30], h: 40 },
+    { rect: [215, 380, 35, 30], h: 45 },
+    { rect: [270, 470, 30, 30], h: 32 },
+    { rect: [480, 630, 60, 24], h: 20 },
+    // Table Mountain — stepped terraces, flat top
+    { poly: [[60,700],[300,680],[520,690],[760,700],[950,740],[1000,800],[20,800]], h: 28, tone: 'rock' },
+    { poly: [[120,720],[320,705],[540,712],[760,725],[900,760],[920,800],[80,800]], h: 60, tone: 'rock' },
+    { poly: [[200,742],[340,730],[560,735],[760,748],[840,780],[850,800],[160,800]], h: 95, tone: 'rock' },
+    { poly: [[280,760],[380,752],[600,756],[740,768],[760,800],[240,800]], h: 125, tone: 'rock' },
+    // Devil's Peak
+    { poly: [[900,700],[1050,690],[1150,740],[1130,800],[880,800]], h: 45, tone: 'rock' },
+    { poly: [[950,730],[1060,725],[1100,770],[1090,800],[940,800]], h: 85, tone: 'rock' },
+    // Lion's Head
+    { poly: [[10,540],[110,530],[140,600],[110,670],[20,680],[0,600]], h: 30, tone: 'rock' },
+    { poly: [[30,565],[95,558],[115,600],[95,645],[35,650],[20,600]], h: 65, tone: 'rock' },
+    { poly: [[45,585],[85,580],[98,605],[85,630],[50,632],[40,605]], h: 100, tone: 'rock' },
+    // Signal Hill ridge
+    { poly: [[0,120],[30,140],[40,300],[30,500],[0,520]], h: 20, tone: 'rock' }
+  ];
+
+  // ------------------------------------------------------------------
+  // Geometry helpers
+  // ------------------------------------------------------------------
+  function pentagon(cx, cy, r) {
+    var pts = [];
+    for (var i = 0; i < 5; i++) {
+      var a = -Math.PI / 2 + i * 2 * Math.PI / 5;
+      pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+    }
+    return pts;
+  }
+  function dist(a, b) { var dx = a.x - b.x, dy = a.y - b.y; return Math.sqrt(dx * dx + dy * dy); }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function uniq(arr) { return arr.filter(function (v, i) { return arr.indexOf(v) === i; }); }
+
+  // ------------------------------------------------------------------
+  // Street graph + shortest path (Dijkstra). Nodes are intersections and
+  // street ends; a spot links to every street that is about as close as
+  // the nearest one, via the projection point onto it.
+  // ------------------------------------------------------------------
+  var GRAPH = buildGraph(STREETS);
+
+  function buildGraph(streets) {
+    var nodes = [], index = {};
+    function nodeAt(x, y) {
+      var k = x + ',' + y;
+      if (index[k] === undefined) { index[k] = nodes.length; nodes.push({ x: x, y: y, adj: [] }); }
+      return index[k];
+    }
+    var onStreet = streets.map(function () { return []; });
+    streets.forEach(function (s, i) {
+      onStreet[i].push(s.axis === 'v' ? nodeAt(s.at, s.from) : nodeAt(s.from, s.at));
+      onStreet[i].push(s.axis === 'v' ? nodeAt(s.at, s.to) : nodeAt(s.to, s.at));
+    });
+    streets.forEach(function (v, i) {
+      if (v.axis !== 'v') return;
+      streets.forEach(function (h, j) {
+        if (h.axis !== 'h') return;
+        if (v.at >= h.from && v.at <= h.to && h.at >= v.from && h.at <= v.to) {
+          var n = nodeAt(v.at, h.at);
+          onStreet[i].push(n); onStreet[j].push(n);
+        }
+      });
+    });
+    streets.forEach(function (s, i) {
+      onStreet[i] = uniq(onStreet[i]).sort(function (a, b) {
+        return s.axis === 'v' ? nodes[a].y - nodes[b].y : nodes[a].x - nodes[b].x;
+      });
+      for (var k = 1; k < onStreet[i].length; k++) link(nodes, onStreet[i][k - 1], onStreet[i][k], s.name);
+    });
+    return { nodes: nodes, onStreet: onStreet };
+  }
+
+  function link(nodes, a, b, via) {
+    var w = dist(nodes[a], nodes[b]);
+    nodes[a].adj.push({ to: b, w: w, via: via });
+    nodes[b].adj.push({ to: a, w: w, via: via });
+  }
+
+  // Every street that is nearly as close as the nearest one, with the
+  // projection point onto it. Lets Dijkstra choose which side of the block
+  // to leave from instead of a greedy nearest-street pick.
+  function snap(p) {
+    var cands = STREETS.map(function (s, i) {
+      var q = s.axis === 'v' ? { x: s.at, y: clamp(p.y, s.from, s.to) } : { x: clamp(p.x, s.from, s.to), y: s.at };
+      return { d: dist(p, q), q: q, street: i };
+    }).sort(function (a, b) { return a.d - b.d; });
+    var limit = cands[0].d + 12;
+    return cands.filter(function (c) { return c.d <= limit; });
+  }
+
+  function route(from, to) {
+    var nodes = GRAPH.nodes.map(function (n) { return { x: n.x, y: n.y, adj: n.adj.slice() }; });
+    // spot node -> one projection node per candidate street -> that street's nodes
+    function addSpot(p) {
+      var spot = nodes.length;
+      nodes.push({ x: p.x, y: p.y, adj: [] });
+      snap(p).forEach(function (c) {
+        var proj = nodes.length;
+        nodes.push({ x: c.q.x, y: c.q.y, adj: [], street: c.street });
+        link(nodes, spot, proj, STREETS[c.street].name);
+        GRAPH.onStreet[c.street].forEach(function (n) { link(nodes, proj, n, STREETS[c.street].name); });
+      });
+      return spot;
+    }
+    var sa = addSpot(from), sb = addSpot(to);
+    // projections of both ends on the same street may connect directly
+    nodes.forEach(function (pa, i) {
+      if (pa.street === undefined) return;
+      nodes.forEach(function (pb, j) {
+        if (j > i && pb.street === pa.street && isProjOf(i, sa) && isProjOf(j, sb)) link(nodes, i, j, STREETS[pa.street].name);
+      });
+    });
+    function isProjOf(id, spot) { return nodes[spot].adj.some(function (e) { return e.to === id; }); }
+
+    var n = nodes.length, distTo = [], prev = [], done = [];
+    for (var i = 0; i < n; i++) { distTo[i] = Infinity; prev[i] = -1; done[i] = false; }
+    distTo[sa] = 0;
+    for (var iter = 0; iter < n; iter++) {
+      var u = -1;
+      for (var j = 0; j < n; j++) if (!done[j] && (u === -1 || distTo[j] < distTo[u])) u = j;
+      if (u === -1 || distTo[u] === Infinity || u === sb) break;
+      done[u] = true;
+      nodes[u].adj.forEach(function (e) {
+        if (distTo[u] + e.w < distTo[e.to]) { distTo[e.to] = distTo[u] + e.w; prev[e.to] = { node: u, via: e.via }; }
+      });
+    }
+
+    var points = [], via = [], cur = sb;
+    while (cur !== -1 && cur !== sa) {
+      points.unshift({ x: nodes[cur].x, y: nodes[cur].y });
+      var p = prev[cur];
+      if (!p) { cur = -1; break; }
+      if (via[0] !== p.via) via.unshift(p.via);
+      cur = p.node;
+    }
+    if (cur === -1) return { points: [from, to], length: dist(from, to), via: [] };
+    points.unshift(from); // sa is the spot itself; sb (== to) came out of the loop
+
+    var len = 0;
+    for (var k = 1; k < points.length; k++) len += dist(points[k - 1], points[k]);
+    return { points: points, length: len, via: via };
+  }
+
+  function walkMinutes(lengthUnits) {
+    return Math.max(1, Math.round(lengthUnits * M_PER_UNIT / WALK_M_PER_MIN));
+  }
+
+  // Precompute routes from the venue so the list can show walk times.
+  var ROUTES = {};
+  SPOTS.forEach(function (s) { ROUTES[s.id] = s.id === 'venue' ? null : route(VENUE, { x: s.x, y: s.y }); });
+
+  // ------------------------------------------------------------------
+  // Opening hours
+  // ------------------------------------------------------------------
+  function fmtHour(h) {
+    var hh = Math.floor(h), mm = Math.round((h - hh) * 60);
+    return (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+  }
+  function openState(spot, now) {
+    var t = now.getHours() + now.getMinutes() / 60;
+    var open = t >= spot.hours[0] && t < spot.hours[1];
+    return { open: open, text: open ? 'Open now · until ' + fmtHour(spot.hours[1]) : 'Closed now · ' + fmtHour(spot.hours[0]) + '–' + fmtHour(spot.hours[1]) };
+  }
+
+  if (typeof document === 'undefined') { return; } // pure logic above is testable without a DOM
+
+  // ------------------------------------------------------------------
+  // Ground: one SVG string
+  // ------------------------------------------------------------------
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  function groundSVG() {
+    var out = [];
+    out.push('<defs><linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#173a5a"/><stop offset="1" stop-color="#1a2f47"/></linearGradient></defs>');
+    // land
+    out.push('<rect x="0" y="0" width="1200" height="800" fill="#22222b"/>');
+    // District Six — open ground with the ghost of the old grid
+    out.push('<rect x="760" y="165" width="440" height="540" fill="#2a2724"/>');
+    for (var gx = 800; gx < 1200; gx += 60) out.push('<line x1="' + gx + '" y1="170" x2="' + (gx + 40) + '" y2="700" stroke="#35312c" stroke-width="1.5" stroke-dasharray="3 6"/>');
+    for (var gy = 220; gy < 700; gy += 60) out.push('<line x1="765" y1="' + gy + '" x2="1200" y2="' + (gy - 30) + '" stroke="#35312c" stroke-width="1.5" stroke-dasharray="3 6"/>');
+    out.push('<text class="big" x="880" y="560">DISTRICT SIX</text>');
+    out.push('<text class="big" x="190" y="679" style="font-size:13px">GARDENS</text>');
+    out.push('<text class="big" x="660" y="140" style="font-size:14px;fill:#5b5b70">FORESHORE</text>');
+    out.push('<text class="big" x="218" y="236" style="font-size:16px;fill:#5b5b70">CBD</text>');
+    // sea
+    out.push('<path d="M0 0 H1200 V92 Q 1000 128 760 104 T 420 112 T 130 96 T 0 88 Z" fill="url(#sea)"/>');
+    out.push('<text class="water-lbl" x="700" y="48">TABLE BAY</text>');
+    // waterfront quays
+    out.push('<rect x="64" y="26" width="70" height="56" rx="3" fill="#2d2d38"/><rect x="146" y="20" width="56" height="62" rx="3" fill="#2d2d38"/><rect x="214" y="30" width="60" height="52" rx="3" fill="#2d2d38"/>');
+    out.push('<circle cx="120" cy="60" r="7" fill="#6fa3c9" opacity=".7"/><circle cx="185" cy="52" r="5" fill="#6fa3c9" opacity=".7"/>');
+    out.push('<text class="place" x="70" y="18" style="font-size:11px;fill:#a0a0b8">V&amp;A WATERFRONT</text>');
+    // Bo-Kaap
+    var bk = ['#e76f8a', '#f2c14e', '#4ea8de', '#7bd389', '#f28c38', '#c77dff'];
+    var k = 0;
+    for (var by = 205; by < 460; by += 30) {
+      if (by > 335 && by < 375) continue;
+      for (var bx = 48; bx < 140; bx += 26) {
+        out.push('<rect x="' + bx + '" y="' + by + '" width="20" height="18" rx="2" fill="' + bk[k++ % bk.length] + '" opacity=".8"/>');
+      }
+    }
+    out.push('<text class="place" x="52" y="196">Bo-Kaap</text>');
+    // parks & squares
+    out.push('<rect x="362" y="400" width="78" height="252" rx="6" fill="#244d3c"/>');
+    for (var t = 0; t < 26; t++) out.push('<circle cx="' + (368 + (t * 37) % 66) + '" cy="' + (410 + t * 9.3) + '" r="5" fill="#2f6b4f"/>');
+    out.push('<text class="place" x="366" y="672">Company\u2019s Garden</text>');
+    out.push('<rect x="462" y="218" width="90" height="134" rx="3" fill="#2f2f3b"/><text class="place" x="470" y="240" style="font-size:11px">Grand Parade</text>');
+    out.push('<rect x="318" y="266" width="32" height="30" rx="2" fill="#2f2f3b"/>');
+    out.push('<rect x="628" y="426" width="44" height="38" rx="3" fill="#2f2f3b"/>');
+    out.push('<path d="M0 88 L0 120 L30 140 L40 300 L30 500 L0 520 Z" fill="#26262e"/>');
+    // preferred precincts
+    ZONES.forEach(function (z) {
+      out.push('<rect class="zone" x="' + z.x + '" y="' + z.y + '" width="' + z.w + '" height="' + z.h + '" rx="8"/>');
+      out.push('<text class="zone-lbl" x="' + (z.x + 8) + '" y="' + (z.y + z.h - 8) + '">' + esc(z.label) + '</text>');
+    });
+    // streets
+    STREETS.forEach(function (s) {
+      var w = s.main ? 13 : s.walk ? 6 : 8;
+      var col = s.walk ? '#3d5a4b' : s.main ? '#474757' : '#3b3b49';
+      var x1 = s.axis === 'v' ? s.at : s.from, x2 = s.axis === 'v' ? s.at : s.to;
+      var y1 = s.axis === 'v' ? s.from : s.at, y2 = s.axis === 'v' ? s.to : s.at;
+      out.push('<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="' + col + '" stroke-width="' + w + '" stroke-linecap="round"' + (s.walk ? ' stroke-dasharray="2 8"' : '') + '/>');
+    });
+    STREETS.forEach(function (s) {
+      var mid = (s.from + s.to) / 2;
+      if (s.axis === 'v') out.push('<text class="st" transform="translate(' + (s.at - 4) + ' ' + mid + ') rotate(-90)" text-anchor="middle">' + esc(s.name).toUpperCase() + '</text>');
+      else out.push('<text class="st" x="' + mid + '" y="' + (s.at - 6) + '" text-anchor="middle">' + esc(s.name).toUpperCase() + '</text>');
+    });
+    out.push('<text class="st" x="960" y="354" text-anchor="middle">KEIZERSGRACHT</text>');
+    // De Waal Drive along the mountain foot
+    out.push('<path d="M760 640 Q 900 660 1200 720" fill="none" stroke="#474757" stroke-width="10" stroke-linecap="round"/>');
+    out.push('<text class="st" x="1000" y="676" transform="rotate(12 1000 676)">DE WAAL DRIVE</text>');
+    // route (filled in by select)
+    out.push('<polyline id="routeGlow" class="route-glow" points=""/><polyline id="routeLine" class="route" points=""/>');
+    return out.join('');
+  }
+
+  // ------------------------------------------------------------------
+  // Solids: CSS 3D extrusions
+  // ------------------------------------------------------------------
+  var LIGHT = -2.2; // light direction in radians, for fake shading
+  var TONES = {
+    block: { h: 240, s: 10, side: [18, 30], top: 36 },
+    stone: { h: 30, s: 12, side: [22, 34], top: 42 },
+    venue: { h: 252, s: 60, side: [34, 48], top: 62 },
+    rock:  { h: 235, s: 8,  side: [14, 24], top: 26 }
+  };
+  function hsl(h, s, l) { return 'hsl(' + h + ' ' + s + '% ' + l + '%)'; }
+
+  function extrude(spec) {
+    var pts = spec.poly ? spec.poly.map(function (p) { return { x: p[0], y: p[1] }; })
+      : [{ x: spec.rect[0], y: spec.rect[1] }, { x: spec.rect[0] + spec.rect[2], y: spec.rect[1] },
+         { x: spec.rect[0] + spec.rect[2], y: spec.rect[1] + spec.rect[3] }, { x: spec.rect[0], y: spec.rect[1] + spec.rect[3] }];
+    var tone = TONES[spec.tone || 'block'], h = spec.h;
+    var el = document.createElement('div');
+    el.className = 'solid';
+    for (var i = 0; i < pts.length; i++) {
+      var a = pts[i], b = pts[(i + 1) % pts.length];
+      var L = dist(a, b), ang = Math.atan2(b.y - a.y, b.x - a.x);
+      var f = document.createElement('div');
+      f.className = 'face side';
+      f.style.left = a.x + 'px'; f.style.top = a.y + 'px';
+      f.style.width = L + 'px'; f.style.height = h + 'px';
+      f.style.transformOrigin = '0 0';
+      f.style.transform = 'rotate(' + ang + 'rad) rotateX(90deg)';
+      var light = 0.5 + 0.5 * Math.cos(ang - LIGHT);
+      f.style.background = hsl(tone.h, tone.s, tone.side[0] + (tone.side[1] - tone.side[0]) * light);
+      el.appendChild(f);
+    }
+    var xs = pts.map(function (p) { return p.x; }), ys = pts.map(function (p) { return p.y; });
+    var minX = Math.min.apply(null, xs), minY = Math.min.apply(null, ys);
+    var top = document.createElement('div');
+    top.className = 'face top';
+    top.style.left = minX + 'px'; top.style.top = minY + 'px';
+    top.style.width = (Math.max.apply(null, xs) - minX) + 'px';
+    top.style.height = (Math.max.apply(null, ys) - minY) + 'px';
+    top.style.transform = 'translateZ(' + h + 'px)';
+    top.style.background = hsl(tone.h, tone.s, tone.top);
+    if (spec.poly) top.style.clipPath = 'polygon(' + pts.map(function (p) { return (p.x - minX) + 'px ' + (p.y - minY) + 'px'; }).join(',') + ')';
+    el.appendChild(top);
+    return el;
+  }
+
+  // ------------------------------------------------------------------
+  // DOM
+  // ------------------------------------------------------------------
+  var stage = document.getElementById('stage');
+  var fit = document.getElementById('fit');
+  var ground = document.getElementById('ground');
+  var solids = document.getElementById('solids');
+  var pinsEl = document.getElementById('pins');
+  var compass = document.getElementById('compass');
+  var detail = document.getElementById('detail');
+  var chips = document.getElementById('chips');
+  var spotsEl = document.getElementById('spots');
+  var spinBtn = document.getElementById('spinBtn');
+
+  ground.innerHTML = groundSVG();
+  SOLIDS.forEach(function (s) { solids.appendChild(extrude(s)); });
+
+  var now = new Date();
+  var pinNodes = {}, listNodes = {};
+  SPOTS.forEach(function (s) {
+    var pin = document.createElement('div');
+    pin.className = 'pin' + (s.kind === 'venue' ? ' venue' : '') + (openState(s, now).open ? '' : ' closed');
+    pin.style.left = s.x + 'px'; pin.style.top = s.y + 'px';
+    if (s.z) pin.style.setProperty('--z', s.z + 'px');
+    pin.dataset.id = s.id;
+    pin.innerHTML = '<div class="marker"><span class="label">' + esc(s.name) + '</span><span class="head">' + s.icon + '</span><span class="stem"></span><span class="foot"></span></div>';
+    pinsEl.appendChild(pin);
+    pinNodes[s.id] = pin;
+
+    if (s.kind === 'venue') return;
+    var li = document.createElement('li');
+    var st = openState(s, now);
+    li.className = st.open ? '' : 'closed';
+    li.dataset.id = s.id;
+    li.innerHTML = '<span class="ic">' + s.icon + '</span><span class="nm">' + esc(s.name) + '<small>' + KINDS[s.kind] + ' · ' + esc(st.text) + '</small></span>' +
+      '<span class="min">' + walkMinutes(ROUTES[s.id].length) + ' min</span>';
+    li.addEventListener('click', function () { select(s.id); });
+    spotsEl.appendChild(li);
+    listNodes[s.id] = li;
+  });
+
+  // filter chips
+  var FILTERS = [['all', 'All'], ['coffee', 'Coffee'], ['food', 'Food'], ['square', 'Parks & squares'], ['culture', 'Culture'], ['transport', 'Transport']];
+  var filter = 'all';
+  FILTERS.forEach(function (f) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = f[1]; b.dataset.kind = f[0];
+    b.setAttribute('aria-pressed', String(f[0] === filter));
+    b.addEventListener('click', function () { filter = f[0]; applyFilter(); });
+    chips.appendChild(b);
+  });
+  function matches(s) {
+    if (filter === 'all' || s.kind === 'venue') return true;
+    if (filter === 'square') return s.kind === 'square' || s.kind === 'park';
+    return s.kind === filter;
+  }
+  function applyFilter() {
+    chips.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.kind === filter)); });
+    SPOTS.forEach(function (s) {
+      var on = matches(s);
+      pinNodes[s.id].classList.toggle('dim', !on);
+      if (listNodes[s.id]) listNodes[s.id].hidden = !on;
+    });
+  }
+
+  // selection + route
+  var selected = null;
+  function select(id) {
+    selected = (id === selected || id === 'venue') ? null : id;
+    var spot = SPOTS.filter(function (s) { return s.id === selected; })[0] || null;
+    SPOTS.forEach(function (s) {
+      pinNodes[s.id].classList.toggle('selected', s.id === selected);
+      if (listNodes[s.id]) listNodes[s.id].setAttribute('aria-selected', String(s.id === selected));
+    });
+    var glow = document.getElementById('routeGlow'), line = document.getElementById('routeLine');
+    if (!spot) {
+      glow.setAttribute('points', ''); line.setAttribute('points', '');
+      detail.innerHTML = '<h2>Where next?</h2><p class="empty">Tap a spot on the map or in the list. You are at <strong>Roamwork Harrington</strong> on Harrington Street. Green precincts are where the hosts suggest meeting.</p>';
+      return;
+    }
+    var r = ROUTES[spot.id];
+    var pts = r.points.map(function (p) { return p.x + ',' + p.y; }).join(' ');
+    glow.setAttribute('points', pts); line.setAttribute('points', pts);
+    var st = openState(spot, new Date());
+    detail.innerHTML =
+      '<h2>' + spot.icon + ' ' + esc(spot.name) + '</h2>' +
+      '<div class="meta">' + KINDS[spot.kind] + ' · <span class="' + (st.open ? 'open' : 'shut') + '">' + esc(st.text) + '</span></div>' +
+      '<p class="why">' + esc(spot.why) + '</p>' +
+      '<div class="walk"><strong>' + walkMinutes(r.length) + ' min walk</strong> from Roamwork · ' + Math.round(r.length * M_PER_UNIT / 50) * 50 + ' m' +
+      (r.via.length ? '<small>via ' + r.via.map(esc).join(' → ') + '</small>' : '') + '</div>';
+  }
+  select(null);
+
+  // ------------------------------------------------------------------
+  // View: tilt / spin / fit
+  // ------------------------------------------------------------------
+  var view = { tilt: 55, spin: -30 };
+  function applyView() {
+    stage.style.setProperty('--tilt', view.tilt + 'deg');
+    stage.style.setProperty('--spin', view.spin + 'deg');
+    compass.style.transform = 'rotate(' + (view.spin - 45) + 'deg)';
+    document.querySelectorAll('[data-view]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.view === (view.tilt < 5 ? '2d' : '3d')));
+    });
+  }
+  function animateTo(tilt, spin) {
+    stage.classList.add('animating');
+    view.tilt = tilt; view.spin = spin; applyView();
+    setTimeout(function () { stage.classList.remove('animating'); }, 750);
+  }
+  function fitStage() {
+    var w = stage.clientWidth, h = stage.clientHeight;
+    var s = Math.min(w / 1240, h / 860);
+    fit.style.transform = 'scale3d(' + s + ',' + s + ',' + s + ')';
+  }
+  window.addEventListener('resize', fitStage);
+  fitStage(); applyView();
+
+  document.querySelectorAll('[data-view]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      stopSpin();
+      if (b.dataset.view === '2d') animateTo(0, 0); else animateTo(55, -30);
+    });
+  });
+  document.getElementById('resetBtn').addEventListener('click', function () { stopSpin(); animateTo(55, -30); select(null); });
+
+  var spinning = false, raf = null;
+  function stopSpin() { spinning = false; spinBtn.setAttribute('aria-pressed', 'false'); if (raf) cancelAnimationFrame(raf); raf = null; }
+  spinBtn.addEventListener('click', function () {
+    if (spinning) return stopSpin();
+    spinning = true; spinBtn.setAttribute('aria-pressed', 'true');
+    if (view.tilt < 5) view.tilt = 55;
+    (function tick() { if (!spinning) return; view.spin = (view.spin + 0.35) % 360; applyView(); raf = requestAnimationFrame(tick); })();
+  });
+
+  // drag to orbit; a short press on a pin selects it
+  var drag = null;
+  stage.addEventListener('pointerdown', function (e) {
+    drag = { x: e.clientX, y: e.clientY, moved: 0, tilt: view.tilt, spin: view.spin, target: e.target.closest('.pin') };
+    stage.setPointerCapture(e.pointerId);
+  });
+  stage.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    drag.moved = Math.max(drag.moved, Math.abs(dx), Math.abs(dy));
+    if (drag.moved < 4) return;
+    stopSpin();
+    view.spin = drag.spin + dx * 0.4;
+    view.tilt = clamp(drag.tilt - dy * 0.3, 0, 72);
+    applyView();
+  });
+  function endDrag(e) {
+    if (!drag) return;
+    if (drag.moved < 4 && drag.target) select(drag.target.dataset.id);
+    drag = null;
+  }
+  stage.addEventListener('pointerup', endDrag);
+  stage.addEventListener('pointercancel', endDrag);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') select(null); });
+})();
+</script>
+</body>
+</html>
