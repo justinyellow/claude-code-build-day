@@ -66,5 +66,38 @@ Set `Status:` as things move. Exactly one plan may be `selected`.
 - Don't scaffold a feature folder until we've decided to prototype that plan.
 - Don't merge, rank, or prune ideas unless asked — that's the group's call.
 - Don't pull shared code out of feature prototypes unless asked.
-- Work on a `feat/<feature-slug>` branch and open a PR. Never push to `main` —
-  see `.cursor/rules/git.mdc`.
+- Work on a `feat/<feature-slug>` branch and open a PR. Never push to `main`.
+
+## Branches
+
+One branch per feature prototype, so the group can build in parallel without
+collisions.
+
+```
+feat/<feature-slug>     e.g. feat/question-router
+```
+
+- Branch off `main`. Keep it to the one feature — don't touch another
+  feature's folder from your branch.
+- `docs/<slug>` for plans and README edits, `fix/<slug>` for repairs.
+- Small, frequent commits. Push often so others can see where you are.
+
+## Merging
+
+`main` is protected — never commit or push to it directly, and never merge
+locally. Everything reaches `main` through a pull request.
+
+1. Push your branch and open a PR (`gh pr create`).
+2. Get one approval from someone in the group. Keep the review quick — does it
+   run, does it do what the plan says.
+3. Squash merge, then delete the branch.
+
+- Open the PR as soon as the feature runs, even if rough. Don't sit on a branch
+  all morning.
+- `main` should always start up. If it's broken, fixing it beats new work.
+
+## Never
+
+- Never push or merge directly to `main` — PR only.
+- No force-pushing `main`, no rewriting pushed history.
+- Don't commit secrets or `.env` files.
