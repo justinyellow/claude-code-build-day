@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kinnect</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <!-- Kinnect shell. Runs by double-clicking this file: no server, no modules,
+       no fetch, nothing from a CDN. Contract: issue #2. -->
+
+  <header class="top">
+    <h1 class="brand">Kinnect</h1>
+    <nav class="nav" aria-label="Sections">
+      <button type="button" data-view="ask">Ask</button>
+      <button type="button" data-view="meet">Meet</button>
+      <button type="button" data-view="find">Find</button>
+      <button type="button" data-view="thank">Thank</button>
+    </nav>
+  </header>
+
+  <main class="views">
+    <section id="view-ask" class="view"></section>
+    <section id="view-meet" class="view"></section>
+    <section id="view-find" class="view"></section>
+    <section id="view-thank" class="view"></section>
+  </main>
+
+  <!-- Load order matters: seed, then store, then features. -->
+  <script src="data.js"></script>
+  <script src="store.js"></script>
+  <script src="features/ask.js"></script>
+  <script src="features/meet.js"></script>
+  <script src="features/find.js"></script>
+  <script src="features/thank.js"></script>
+
+  <script>
+    (function () {
+      var VIEWS = ['ask', 'meet', 'find', 'thank'];
+
+      // Mount each feature. Guarded so a missing or empty file can't take the
+      // page down — the shell still shows four navigable sections.
+      var askEl = document.getElementById('view-ask');
+      var meetEl = document.getElementById('view-meet');
+      var findEl = document.getElementById('view-find');
+      var thankEl = document.getElementById('view-thank');
+
+      if (window.features && window.features.ask) window.features.ask(askEl, window.store);
+      if (window.features && window.features.meet) window.features.meet(meetEl, window.store);
+      if (window.features && window.features.find) window.features.find(findEl, window.store);
+      if (window.features && window.features.thank) window.features.thank(thankEl, window.store);
+
+      // Nav. One section visible at a time; hash mirrors it so a refresh
+      // lands you back where you were.
+      var buttons = document.querySelectorAll('.nav button');
+
+      function show(view) {
+        if (VIEWS.indexOf(view) === -1) view = VIEWS[0];
+        VIEWS.forEach(function (v) {
+          document.getElementById('view-' + v).classList.toggle('active', v === view);
+        });
+        Array.prototype.forEach.call(buttons, function (b) {
+          b.classList.toggle('active', b.getAttribute('data-view') === view);
+        });
+        if (location.hash !== '#' + view) location.replace('#' + view);
+      }
+
+      Array.prototype.forEach.call(buttons, function (b) {
+        b.addEventListener('click', function () { show(b.getAttribute('data-view')); });
+      });
+      window.addEventListener('hashchange', function () { show(location.hash.slice(1)); });
+
+      show(location.hash.slice(1) || 'ask');
+    })();
+  </script>
+</body>
+</html>
