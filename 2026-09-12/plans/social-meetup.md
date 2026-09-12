@@ -2,7 +2,7 @@
 
 **Owner:** Cameron
 **Track:** Everyday (for events)
-**Status:** idea
+**Status:** prototyping
 
 ## The feature
 Suggests who at this event you should be talking to, and gives you a reason
