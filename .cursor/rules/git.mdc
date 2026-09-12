@@ -1,0 +1,31 @@
+---
+description: Branch and commit conventions for build day
+alwaysApply: true
+---
+
+# Branches
+
+One branch per feature prototype, so the group can build in parallel without
+collisions.
+
+```
+feat/<feature-slug>     e.g. feat/question-router
+```
+
+- Branch off `main`. Keep it to the one feature — don't touch another
+  feature's folder from your branch.
+- `docs/<slug>` for plans and README edits, `fix/<slug>` for repairs.
+- Small, frequent commits. Push often so others can see where you are.
+
+# Merging
+
+- Merge into `main` as soon as the feature runs, even if rough. Don't sit on a
+  branch all morning.
+- `main` should always start up. If it's broken, fixing it beats new work.
+- Squash merge. Delete the branch after.
+- No reviews required — it's a sprint. Just tell the group what landed.
+
+# Never
+
+- No force-pushing `main`, no rewriting pushed history.
+- Don't commit secrets or `.env` files.
