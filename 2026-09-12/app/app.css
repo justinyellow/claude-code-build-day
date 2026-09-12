@@ -1,28 +1,39 @@
 /* Kinnect — design tokens, layout, nav.
    Hand-written. No framework, no webfont: this runs on a projector with wifi
    off, so everything here has to come from the filesystem.
-   Features may use the custom properties below; Ask already does. */
+   Features use the custom properties below; keep the names stable. */
 
 :root {
-  --bg: #131318;
-  --surface: #1b1b22;
-  --line: #3a3a44;
-  --text: #f2f2f5;
-  --muted: #a3a3b0;
-  --accent: #7c5cff;
-  --accent-soft: rgba(124, 92, 255, 0.15);
-  --ok: #3ddc84;
+  /* Warm neutral dark. One accent, used sparingly. */
+  --bg: #101012;
+  --surface: #17171a;
+  --surface-2: #1e1e22;
+  --line: #2a2a2f;
+  --line-strong: #3a3a41;
+  --text: #f4f3f0;
+  --muted: #9a9aa3;
+  --faint: #6b6b74;
+  --accent: #e0472f;
+  --accent-soft: rgba(224, 71, 47, 0.12);
+  --ok: #4cc38a;
+  --ok-soft: rgba(76, 195, 138, 0.14);
 
-  --radius: 0.75rem;
-  --gap: 1rem;
-  --page: 64rem;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --page: 60rem;
 }
 
 * { box-sizing: border-box; }
 
 html {
-  /* Big base type — legible from the back of the room beats pretty. */
-  font-size: 20px;
+  /* Everything is in rem, so this is the one size lever. 18px reads fine on
+     a laptop; wide screens (projectors, TVs) step up. See #31. */
+  font-size: 18px;
+  color-scheme: dark;
+}
+
+@media (min-width: 100rem) {
+  html { font-size: 20px; }
 }
 
 body {
@@ -31,11 +42,25 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  line-height: 1.4;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-button, input { font: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: 0.6; }
+a { color: inherit; }
+
+::selection { background: var(--accent); color: #fff; }
+
+/* Keyboard users get a ring; mouse users don't get a stray one. */
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
 
 /* Header + nav */
 
@@ -43,55 +68,67 @@ button, input { font: inherit; }
   position: sticky;
   top: 0;
   z-index: 10;
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  padding: 1rem 2rem;
   background: var(--bg);
   border-bottom: 1px solid var(--line);
 }
 
-.brand {
-  margin: 0;
-  font-size: 1.6rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+.top-inner {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  min-height: 3.6rem;
 }
 
-.brand::before {
-  content: "";
-  display: inline-block;
-  width: 0.7em;
-  height: 0.7em;
-  margin-right: 0.45em;
-  border-radius: 50%;
-  background: var(--accent);
-  vertical-align: -0.05em;
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.brand-ctx {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0;
 }
 
 .nav {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
   margin-left: auto;
+  align-self: stretch;
 }
 
 .nav button {
-  padding: 0.6rem 1.4rem;
-  border: 1px solid transparent;
-  border-radius: 2rem;
+  position: relative;
+  padding: 0 0.9rem;
+  border: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  cursor: pointer;
 }
 
-.nav button:hover { color: var(--text); border-color: var(--line); }
+.nav button:hover { color: var(--text); }
 
-.nav button.active {
-  color: #fff;
+.nav button.active { color: var(--text); }
+
+.nav button.active::after {
+  content: "";
+  position: absolute;
+  left: 0.9rem;
+  right: 0.9rem;
+  bottom: -1px;
+  height: 2px;
   background: var(--accent);
-  border-color: var(--accent);
 }
 
 /* Views */
@@ -99,27 +136,30 @@ button, input { font: inherit; }
 .views {
   max-width: var(--page);
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2.25rem 1.5rem 4rem;
 }
 
 .view { display: none; }
 .view.active { display: block; }
 
 /* A section with nothing mounted in it — visible so a missing feature reads
-   as "not here yet" rather than a broken page. */
+   as "not here yet" rather than a broken page. Relies on the <section> tags
+   in index.html having no whitespace inside them. */
 .view.active:empty::before {
   content: "Nothing here yet.";
   display: block;
-  padding: 3rem 0;
-  color: var(--muted);
-  font-size: 1.25rem;
+  padding: 4rem 0;
+  color: var(--faint);
+  font-size: 1.1rem;
   text-align: center;
 }
 
 @media (max-width: 40rem) {
-  html { font-size: 17px; }
-  .top { flex-wrap: wrap; gap: 0.75rem; padding: 0.75rem 1rem; }
-  .nav { margin-left: 0; width: 100%; }
-  .nav button { flex: 1; padding: 0.5rem 0.75rem; }
-  .views { padding: 1rem; }
+  html { font-size: 16px; }
+  .top-inner { flex-wrap: wrap; gap: 0.5rem; padding: 0.6rem 1rem; }
+  .brand-ctx { display: none; }
+  .nav { margin-left: 0; width: 100%; overflow-x: auto; }
+  .nav button { padding: 0.6rem 0.75rem; }
+  .nav button.active::after { left: 0.75rem; right: 0.75rem; bottom: 0; }
+  .views { padding: 1.25rem 1rem 3rem; }
 }
