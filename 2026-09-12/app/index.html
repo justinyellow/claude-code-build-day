@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kinnect</title>
+<style>
+  :root {
+    --bg: #131318;
+    --surface: #1b1b22;
+    --line: #3a3a44;
+    --accent: #7c5cff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: #eceaf5;
+    font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+  header {
+    padding: 1.5rem 2rem .75rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  header h1 { margin: 0; font-size: 1.6rem; letter-spacing: -0.02em; }
+  header .sub { opacity: .55; font-size: 1rem; }
+
+  nav {
+    display: flex;
+    gap: .5rem;
+    padding: 0 2rem;
+    border-bottom: 1px solid var(--line);
+  }
+  nav button {
+    font: inherit;
+    font-size: 1.15rem;
+    padding: .7rem 1.4rem;
+    background: none;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    color: inherit;
+    opacity: .55;
+    cursor: pointer;
+  }
+  nav button[aria-selected="true"] { opacity: 1; border-bottom-color: var(--accent); }
+  nav button .todo { font-size: .8rem; opacity: .5; margin-left: .4rem; }
+
+  main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    gap: 2rem;
+    padding: 2rem;
+    max-width: 72rem;
+    margin: 0 auto;
+  }
+  .placeholder { opacity: .4; font-size: 1.15rem; }
+
+  aside h2 { font-size: .85rem; text-transform: uppercase; letter-spacing: .08em; opacity: .5; margin: 0 0 .75rem; }
+  .person {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .55rem .75rem;
+    border: 1px solid transparent;
+    border-radius: .5rem;
+  }
+  .person.is-target { border-color: var(--accent); background: rgba(124, 92, 255, .12); }
+  .person .nm { font-weight: 600; }
+  .person .tags { opacity: .5; font-size: .85rem; flex: 1; }
+  .person .cr { font-size: .85rem; color: var(--accent); }
+  .person .stage { font-size: .75rem; opacity: .6; }
+
+  @media (max-width: 760px) {
+    main { grid-template-columns: 1fr; padding: 1.25rem; }
+    nav { padding: 0 1rem; overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Kinnect</h1>
+    <span class="sub">Claude Fable 5.1 Build Day — Roamwork Harrington, Cape Town</span>
+  </header>
+
+  <nav id="nav">
+    <button data-view="ask" aria-selected="true">Ask</button>
+    <button data-view="meet" aria-selected="false">Meet</button>
+    <button data-view="find" aria-selected="false">Find</button>
+    <button data-view="thank" aria-selected="false">Thank</button>
+  </nav>
+
+  <main>
+    <div>
+      <section id="view-ask"></section>
+      <section id="view-meet" hidden></section>
+      <section id="view-find" hidden></section>
+      <section id="view-thank" hidden></section>
+    </div>
+    <aside>
+      <h2>In the room</h2>
+      <div id="room"></div>
+    </aside>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="store.js"></script>
+  <script src="features/ask.js"></script>
+  <script src="features/meet.js"></script>
+  <script src="features/find.js"></script>
+  <script src="features/thank.js"></script>
+  <script>
+    // Mount each feature into its own section. Guarded, so a feature that
+    // hasn't landed yet leaves a placeholder instead of taking the page down.
+    ['ask', 'meet', 'find', 'thank'].forEach(function (name) {
+      var el = document.getElementById('view-' + name);
+      var mount = window.features && window.features[name];
+      if (typeof mount === 'function') {
+        mount(el, window.store);
+      } else {
+        el.innerHTML = '<p class="placeholder">' + name + ' hasn’t landed yet.</p>';
+        var tab = document.querySelector('nav button[data-view="' + name + '"]');
+        if (tab) tab.innerHTML += '<span class="todo">todo</span>';
+      }
+    });
+
+    document.getElementById('nav').addEventListener('click', function (e) {
+      var btn = e.target.closest('button');
+      if (!btn) return;
+      var view = btn.getAttribute('data-view');
+      document.querySelectorAll('nav button').forEach(function (b) {
+        b.setAttribute('aria-selected', String(b === btn));
+      });
+      ['ask', 'meet', 'find', 'thank'].forEach(function (name) {
+        document.getElementById('view-' + name).hidden = (name !== view);
+      });
+    });
+
+    // Always-visible roster. Shows who is on stage and who Find is targeting.
+    var room = document.getElementById('room');
+    function renderRoom(state) {
+      room.innerHTML = state.attendees.map(function (a) {
+        var cls = 'person' + (state.target === a.id ? ' is-target' : '');
+        var speaking = state.sessions.some(function (s) {
+          return s.speakerId === a.id &&
+            Date.now() >= Date.parse(s.startsAt) && Date.now() <= Date.parse(s.endsAt);
+        });
+        return '<div class="' + cls + '">' +
+          '<span class="nm">' + a.name + (a.id === state.me ? ' (you)' : '') + '</span>' +
+          '<span class="tags">' + (a.expertise || []).join(', ') + '</span>' +
+          (speaking ? '<span class="stage">on stage</span>' : '') +
+          (a.credits ? '<span class="cr">' + a.credits + '</span>' : '') +
+          '</div>';
+      }).join('');
+    }
+    renderRoom(window.store.getState());
+    window.store.subscribe(renderRoom);
+  </script>
+</body>
+</html>
