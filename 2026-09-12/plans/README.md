@@ -1,7 +1,7 @@
 # Plans — 2026-09-12
 
-One file per idea. See `/CLAUDE.md` for the shape of a plan and how we go
-from ideas → a few prototypes → one selected project.
+One file per feature idea. See `/CLAUDE.md` for the shape of a plan and how we
+go from ideas → a few feature prototypes → one selected feature.
 
 | Plan | Track | Status |
 |------|-------|--------|
