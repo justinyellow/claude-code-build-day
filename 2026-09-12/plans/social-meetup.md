@@ -1,7 +1,7 @@
 # Meet — Social meet-up
 
 **Owner:** Cameron
-**Track:** _TBD_
+**Track:** Everyday (for events)
 **Status:** idea
 
 ## The feature
@@ -13,7 +13,7 @@ Matching runs on the same **expertise** tags the router uses, so the two
 features feed each other rather than asking people to fill in two profiles.
 
 ## Why Fable 5.1
-_TBD_
+Built for Fable and Claude events — see [APP.md](../APP.md).
 
 ## Demo in 2 minutes
 Open the app cold, get three people worth meeting and a one-line reason for

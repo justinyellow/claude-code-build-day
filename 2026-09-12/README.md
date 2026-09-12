@@ -44,9 +44,11 @@ Audience vote. Everyone gets three votes, cast during demos (11:30–12:45) at
 - [Submit your demo](https://form.typeform.com/to/SygLMeAD)
 - [Discord](https://discord.gg/xzQnZAGa8)
 
-## My build
+## Our build
 
-**Track:** _TBD_
-**Idea:** _TBD_
+**App:** Kinnect — an event companion for Fable and Claude meet-ups
+**Track:** Everyday (for events)
+
+See [APP.md](APP.md) and [plans/](plans/).
 
 ### Notes

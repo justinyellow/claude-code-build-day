@@ -1,7 +1,7 @@
 # Ask — Question router
 
 **Owner:** Justin
-**Track:** _TBD_
+**Track:** Everyday (for events)
 **Status:** idea
 
 ## The feature
@@ -13,7 +13,7 @@ Routing is schedule-aware: it won't interrupt someone who is presenting, and it
 knows who is in the room right now.
 
 ## Why Fable 5.1
-_TBD_
+Built for Fable and Claude events — see [APP.md](../APP.md).
 
 ## Demo in 2 minutes
 Ask a question from one phone. Watch it land on the right expert's phone —

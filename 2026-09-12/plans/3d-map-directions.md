@@ -1,6 +1,6 @@
 # Find — 3D map directions
 
-**Track:** _TBD_
+**Track:** Everyday (for events)
 **Status:** idea
 
 ## The feature
@@ -9,7 +9,7 @@ session is in, or the expert who just answered your question. Wayfinding for a
 building, not a city.
 
 ## Why Fable 5.1
-_TBD_
+Built for Fable and Claude events — see [APP.md](../APP.md).
 
 ## Demo in 2 minutes
 Tap a person in the app, see a 3D route through the venue to where they're

@@ -1,8 +1,8 @@
-# The app
+# Kinnect
 
-**Name:** _TBD_
+**Track:** Everyday (for events)
 
-An event companion for community meet-ups. The premise: the value of an event
+**Kinnect** is an event companion for Fable and Claude community meet-ups. The premise: the value of an event
 is the people in the room, and most of it goes unrealised — you don't know who
 knows what, you can't find them, and the one person who could answer your
 question never hears it.
@@ -33,6 +33,12 @@ versions of these.
   answered or unanswered.
 - **Credits** — compute granted to an attendee for contributing. Earned by
   answering, spent or gifted.
+
+## Why Fable 5.1
+
+Built for Fable and Claude events specifically — the audience is exactly these
+rooms. Every attendee already has Claude, already has expertise worth routing
+to, and already loses most of it to the fact that nobody knows who knows what.
 
 ## Design constraints
 

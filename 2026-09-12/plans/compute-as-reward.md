@@ -1,6 +1,6 @@
 # Thank — Compute as reward
 
-**Track:** _TBD_
+**Track:** Everyday (for events)
 **Status:** idea
 
 ## The feature
@@ -11,7 +11,7 @@ This is what makes [Ask](question-router.md) work: experts answer because
 answering is worth something.
 
 ## Why Fable 5.1
-_TBD_
+Built for Fable and Claude events — see [APP.md](../APP.md).
 
 ## Demo in 2 minutes
 Answer a routed question, watch credits land, spend them on something in-app.
