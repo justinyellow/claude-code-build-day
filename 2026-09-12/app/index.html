@@ -20,6 +20,7 @@
         <button type="button" data-view="meet">Meet</button>
         <button type="button" data-view="find">Find</button>
         <button type="button" data-view="thank">Thank</button>
+        <button type="button" data-view="compute">Compute</button>
       </nav>
     </div>
   </header>
@@ -32,6 +33,7 @@
     <section id="view-meet" class="view" aria-label="Meet"></section>
     <section id="view-find" class="view" aria-label="Find"></section>
     <section id="view-thank" class="view" aria-label="Thank"></section>
+    <section id="view-compute" class="view" aria-label="Compute"></section>
   </main>
 
   <!-- Load order matters: seed, then store, then features. -->
@@ -42,10 +44,11 @@
   <script src="features/meet.js"></script>
   <script src="features/find.js"></script>
   <script src="features/thank.js"></script>
+  <script src="features/compute.js"></script>
 
   <script>
     (function () {
-      var VIEWS = ['events', 'ask', 'meet', 'find', 'thank'];
+      var VIEWS = ['events', 'ask', 'meet', 'find', 'thank', 'compute'];
       var buttons = document.querySelectorAll('.nav button');
 
       // Nav first, so the tabs work even if every feature below blows up.
