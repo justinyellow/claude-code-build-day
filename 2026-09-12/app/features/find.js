@@ -1,3 +1,7 @@
-// Kinnect — Find. Registers window.features.find(el, store). See issue #5.
-// Empty on purpose so the script tag in index.html resolves; the shell guards
-// the call, so nothing renders until this is filled in.
+// Kinnect — find. Owned by whoever has that epic. Classic script, no imports.
+// Register your feature like this, then delete this comment:
+//
+//   window.features = window.features || {};
+//   window.features.find = function (el, store) { /* render into el */ };
+//
+// See the contract in issue #2.
