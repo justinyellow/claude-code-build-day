@@ -66,4 +66,5 @@ Set `Status:` as things move. Exactly one plan may be `selected`.
 - Don't scaffold a feature folder until we've decided to prototype that plan.
 - Don't merge, rank, or prune ideas unless asked — that's the group's call.
 - Don't pull shared code out of feature prototypes unless asked.
-- Work on a `feat/<feature-slug>` branch, not `main` — see `.cursor/rules/git.mdc`.
+- Work on a `feat/<feature-slug>` branch and open a PR. Never push to `main` —
+  see `.cursor/rules/git.mdc`.

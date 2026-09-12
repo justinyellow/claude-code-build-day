@@ -19,13 +19,20 @@ feat/<feature-slug>     e.g. feat/question-router
 
 # Merging
 
-- Merge into `main` as soon as the feature runs, even if rough. Don't sit on a
-  branch all morning.
+`main` is protected — never commit or push to it directly, and never merge
+locally. Everything reaches `main` through a pull request.
+
+1. Push your branch and open a PR (`gh pr create`).
+2. Get one approval from someone in the group. Keep the review quick — does it
+   run, does it do what the plan says.
+3. Squash merge, then delete the branch.
+
+- Open the PR as soon as the feature runs, even if rough. Don't sit on a branch
+  all morning.
 - `main` should always start up. If it's broken, fixing it beats new work.
-- Squash merge. Delete the branch after.
-- No reviews required — it's a sprint. Just tell the group what landed.
 
 # Never
 
+- Never push or merge directly to `main` — PR only.
 - No force-pushing `main`, no rewriting pushed history.
 - Don't commit secrets or `.env` files.
